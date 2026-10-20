@@ -1,0 +1,466 @@
+[
+  {
+    "id": "schema.public",
+    "label": "Create schema \"public\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres"
+    },
+    "precheck": [],
+    "execute": [
+      {
+        "description": "Create schema \"public\"",
+        "sql": "CREATE SCHEMA IF NOT EXISTS \"public\"",
+        "params": []
+      }
+    ],
+    "postcheck": []
+  },
+  {
+    "id": "table.Feedback",
+    "label": "Create table \"Feedback\"",
+    "summary": "Creates table \"Feedback\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "Feedback"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"Feedback\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"Feedback\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"Feedback\"",
+        "sql": "CREATE TABLE \"public\".\"Feedback\" (\n  \"content\" text NOT NULL,\n  \"createdAt\" timestamptz DEFAULT (now()) NOT NULL,\n  \"id\" SERIAL NOT NULL,\n  \"mentorId\" int4 NOT NULL,\n  \"submissionId\" int4 NOT NULL,\n  \"updatedAt\" timestamptz NOT NULL,\n  PRIMARY KEY (\"id\")\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"Feedback\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"Feedback\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "table.Submission",
+    "label": "Create table \"Submission\"",
+    "summary": "Creates table \"Submission\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "Submission"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"Submission\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"Submission\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"Submission\"",
+        "sql": "CREATE TABLE \"public\".\"Submission\" (\n  \"createdAt\" timestamptz DEFAULT (now()) NOT NULL,\n  \"description\" text NOT NULL,\n  \"id\" SERIAL NOT NULL,\n  \"liveUrl\" text,\n  \"name\" text NOT NULL,\n  \"ownerId\" int4 NOT NULL,\n  \"repoUrl\" text NOT NULL,\n  \"status\" text DEFAULT 'PENDING' NOT NULL,\n  \"updatedAt\" timestamptz NOT NULL,\n  PRIMARY KEY (\"id\"),\n  CONSTRAINT \"Submission_status_check_56005a61\" CHECK (\"status\" IN ('PENDING', 'APPROVED', 'REJECTED'))\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"Submission\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"Submission\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "table.User",
+    "label": "Create table \"User\"",
+    "summary": "Creates table \"User\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "User"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"User\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"User\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"User\"",
+        "sql": "CREATE TABLE \"public\".\"User\" (\n  \"createdAt\" timestamptz DEFAULT (now()) NOT NULL,\n  \"email\" text NOT NULL,\n  \"id\" SERIAL NOT NULL,\n  \"name\" text NOT NULL,\n  \"passwordHash\" text NOT NULL,\n  \"role\" text DEFAULT 'STUDENT' NOT NULL,\n  \"updatedAt\" timestamptz NOT NULL,\n  PRIMARY KEY (\"id\"),\n  CONSTRAINT \"User_role_check_3a951b66\" CHECK (\"role\" IN ('STUDENT', 'MENTOR'))\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"User\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"User\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "unique.Feedback.Feedback_submissionId_key",
+    "label": "Add unique constraint on \"Feedback\" (submissionId)",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "unique",
+        "name": "Feedback_submissionId_key",
+        "table": "Feedback"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"Feedback_submissionId_key\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "Feedback_submissionId_key",
+          "public",
+          "\"public\".\"Feedback\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add unique constraint \"Feedback_submissionId_key\"",
+        "sql": "ALTER TABLE \"public\".\"Feedback\" ADD CONSTRAINT \"Feedback_submissionId_key\" UNIQUE (\"submissionId\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify constraint \"Feedback_submissionId_key\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "Feedback_submissionId_key",
+          "public",
+          "\"public\".\"Feedback\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "unique.Submission.Submission_ownerId_repoUrl_key",
+    "label": "Add unique constraint on \"Submission\" (ownerId, repoUrl)",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "unique",
+        "name": "Submission_ownerId_repoUrl_key",
+        "table": "Submission"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"Submission_ownerId_repoUrl_key\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "Submission_ownerId_repoUrl_key",
+          "public",
+          "\"public\".\"Submission\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add unique constraint \"Submission_ownerId_repoUrl_key\"",
+        "sql": "ALTER TABLE \"public\".\"Submission\" ADD CONSTRAINT \"Submission_ownerId_repoUrl_key\" UNIQUE (\"ownerId\", \"repoUrl\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify constraint \"Submission_ownerId_repoUrl_key\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "Submission_ownerId_repoUrl_key",
+          "public",
+          "\"public\".\"Submission\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "unique.User.User_email_key",
+    "label": "Add unique constraint on \"User\" (email)",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "unique",
+        "name": "User_email_key",
+        "table": "User"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"User_email_key\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "User_email_key",
+          "public",
+          "\"public\".\"User\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add unique constraint \"User_email_key\"",
+        "sql": "ALTER TABLE \"public\".\"User\" ADD CONSTRAINT \"User_email_key\" UNIQUE (\"email\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify constraint \"User_email_key\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "User_email_key",
+          "public",
+          "\"public\".\"User\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.Feedback.Feedback_mentorId_idx_3912a262",
+    "label": "Create index \"Feedback_mentorId_idx_3912a262\" on \"Feedback\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "Feedback_mentorId_idx_3912a262",
+        "table": "Feedback"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"Feedback_mentorId_idx_3912a262\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"Feedback_mentorId_idx_3912a262\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"Feedback_mentorId_idx_3912a262\"",
+        "sql": "CREATE INDEX \"Feedback_mentorId_idx_3912a262\" ON \"public\".\"Feedback\" (\"mentorId\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"Feedback_mentorId_idx_3912a262\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"Feedback_mentorId_idx_3912a262\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.Submission.Submission_ownerId_idx_e2d0c1ef",
+    "label": "Create index \"Submission_ownerId_idx_e2d0c1ef\" on \"Submission\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "Submission_ownerId_idx_e2d0c1ef",
+        "table": "Submission"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"Submission_ownerId_idx_e2d0c1ef\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"Submission_ownerId_idx_e2d0c1ef\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"Submission_ownerId_idx_e2d0c1ef\"",
+        "sql": "CREATE INDEX \"Submission_ownerId_idx_e2d0c1ef\" ON \"public\".\"Submission\" (\"ownerId\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"Submission_ownerId_idx_e2d0c1ef\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"Submission_ownerId_idx_e2d0c1ef\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.Feedback.Feedback_submissionId_fkey",
+    "label": "Add foreign key \"Feedback_submissionId_fkey\" on \"Feedback\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "Feedback_submissionId_fkey",
+        "table": "Feedback"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"Feedback_submissionId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "Feedback_submissionId_fkey",
+          "public",
+          "\"public\".\"Feedback\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"Feedback_submissionId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"Feedback\"\nADD CONSTRAINT \"Feedback_submissionId_fkey\"\nFOREIGN KEY (\"submissionId\")\nREFERENCES \"public\".\"Submission\" (\"id\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"Feedback_submissionId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "Feedback_submissionId_fkey",
+          "public",
+          "\"public\".\"Feedback\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.Feedback.Feedback_mentorId_fkey",
+    "label": "Add foreign key \"Feedback_mentorId_fkey\" on \"Feedback\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "Feedback_mentorId_fkey",
+        "table": "Feedback"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"Feedback_mentorId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "Feedback_mentorId_fkey",
+          "public",
+          "\"public\".\"Feedback\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"Feedback_mentorId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"Feedback\"\nADD CONSTRAINT \"Feedback_mentorId_fkey\"\nFOREIGN KEY (\"mentorId\")\nREFERENCES \"public\".\"User\" (\"id\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"Feedback_mentorId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "Feedback_mentorId_fkey",
+          "public",
+          "\"public\".\"Feedback\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.Submission.Submission_ownerId_fkey",
+    "label": "Add foreign key \"Submission_ownerId_fkey\" on \"Submission\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "Submission_ownerId_fkey",
+        "table": "Submission"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"Submission_ownerId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "Submission_ownerId_fkey",
+          "public",
+          "\"public\".\"Submission\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"Submission_ownerId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"Submission\"\nADD CONSTRAINT \"Submission_ownerId_fkey\"\nFOREIGN KEY (\"ownerId\")\nREFERENCES \"public\".\"User\" (\"id\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"Submission_ownerId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "Submission_ownerId_fkey",
+          "public",
+          "\"public\".\"Submission\""
+        ]
+      }
+    ]
+  }
+]
