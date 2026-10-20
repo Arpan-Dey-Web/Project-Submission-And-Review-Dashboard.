@@ -1,7 +1,8 @@
 import type { Request, Response } from "express";
 
-import type { AuthenticatedRequest } from "../../lib/auth.ts";
-import { parseOrThrow } from "../../lib/validate.ts";
+import type { AuthenticatedRequest } from "../../types/index.ts";
+import type { ListQuery, StatusUpdateInput, SubmitProjectInput } from "../../types/index.ts";
+import { parseOrThrow, validated } from "../../lib/validate.ts";
 import {
   createSubmission,
   listMySubmissions,
@@ -9,12 +10,14 @@ import {
   submissionStats,
   updateStatus,
 } from "./submission.service.ts";
-import type { ListQuery, StatusUpdateInput, SubmitProjectInput } from "./submission.validation.ts";
 import { idParamSchema, listQuerySchema } from "./submission.validation.ts";
 
 export async function createSubmissionController(req: Request, res: Response): Promise<void> {
-  const input = req.body as SubmitProjectInput;
-  const submission = await createSubmission((req as AuthenticatedRequest).user.id, input);
+  const input = validated<SubmitProjectInput>(req);
+  const submission = await createSubmission(
+    (req as AuthenticatedRequest).user.id,
+    input,
+  );
   res.status(201).json({ submission });
 }
 
@@ -24,14 +27,14 @@ export async function listMySubmissionsController(req: Request, res: Response): 
 }
 
 export async function listSubmissionsController(req: Request, res: Response): Promise<void> {
-  const query = parseOrThrow(listQuerySchema, req.query) as ListQuery;
+  const query = parseOrThrow(listQuerySchema, req.query);
   const result = await listSubmissions(query);
   res.json(result);
 }
 
 export async function updateStatusController(req: Request, res: Response): Promise<void> {
   const { id } = parseOrThrow(idParamSchema, req.params);
-  const input = req.body as StatusUpdateInput;
+  const input = validated<StatusUpdateInput>(req);
   const result = await updateStatus((req as AuthenticatedRequest).user.id, id, input);
   res.json(result);
 }

@@ -1,12 +1,21 @@
-export interface HttpError extends Error {
-  status: number;
-}
+import type { FieldErrors, HttpError } from "../types/index.ts";
 
-export function createHttpError(status: number, message: string): HttpError {
+export type { HttpError };
+
+export function createHttpError(
+  status: number,
+  message: string,
+  fieldErrors?: FieldErrors,
+): HttpError {
   const error = Error(message);
-  const withStatus = error as unknown as { status: number; name: string };
-  withStatus.status = status;
-  withStatus.name = status >= 500 ? "ServerError" : "HttpError";
+  const extra = error as unknown as {
+    status: number;
+    name: string;
+    fieldErrors?: FieldErrors;
+  };
+  extra.status = status;
+  extra.name = "HttpError";
+  if (fieldErrors) extra.fieldErrors = fieldErrors;
   return error as HttpError;
 }
 
@@ -23,6 +32,6 @@ export const errors = {
   unauthorized: (message = "Authentication required") => createHttpError(401, message),
   forbidden: (message = "You do not have permission to do this") => createHttpError(403, message),
   notFound: (message = "Not found") => createHttpError(404, message),
-  conflict: (message: string) => createHttpError(409, message),
+  conflict: (message: string, fieldErrors?: FieldErrors) => createHttpError(409, message, fieldErrors),
   unprocessable: (message: string) => createHttpError(422, message),
 };

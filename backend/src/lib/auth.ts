@@ -1,12 +1,8 @@
-import type { NextFunction, Request, RequestHandler, Response } from "express";
+import type { NextFunction, Request, Response } from "express";
 import jwt, { type SignOptions } from "jsonwebtoken";
 
 import { env } from "../config/env.ts";
-
-export interface AuthUser {
-  id: number;
-  role: "STUDENT" | "MENTOR";
-}
+import type { AuthUser, AuthenticatedRequest } from "../types/index.ts";
 
 export function signToken(user: AuthUser): string {
   const options: SignOptions = { expiresIn: env.jwtExpiresIn as SignOptions["expiresIn"] };
@@ -27,10 +23,6 @@ export function verifyToken(token: string): AuthUser {
 
 export function extractBearerToken(header?: string): string | null {
   return header?.startsWith("Bearer ") ? header.slice("Bearer ".length) : null;
-}
-
-export interface AuthenticatedRequest extends Request {
-  user: AuthUser;
 }
 
 export function authenticate(req: Request, res: Response, next: NextFunction): void {

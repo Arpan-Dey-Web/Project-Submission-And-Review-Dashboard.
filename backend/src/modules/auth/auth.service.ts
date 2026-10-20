@@ -3,11 +3,11 @@ import bcrypt from "bcryptjs";
 import { connectDatabase, db } from "../../prisma/db.ts";
 import { errors } from "../../lib/errors.ts";
 import { signToken } from "../../lib/auth.ts";
-import type { LoginInput, SignupInput } from "./auth.validation.ts";
+import type { AuthResponse, LoginInput, PublicUser, SignupInput } from "../../types/index.ts";
 
 const BCRYPT_ROUNDS = 10;
 
-export async function signupStudent(input: SignupInput) {
+export async function signupStudent(input: SignupInput): Promise<AuthResponse> {
   await connectDatabase();
 
   const existing = await db.orm.public.User.where({ email: input.email }).first();
@@ -26,7 +26,7 @@ export async function signupStudent(input: SignupInput) {
   return { token: signToken({ id: user.id, role: "STUDENT" }), user: publicUser(user) };
 }
 
-export async function login(input: LoginInput) {
+export async function login(input: LoginInput): Promise<AuthResponse> {
   await connectDatabase();
 
   const user = await db.orm.public.User.where({ email: input.email }).first();
@@ -37,15 +37,12 @@ export async function login(input: LoginInput) {
   return { token: signToken({ id: user.id, role: user.role }), user: publicUser(user) };
 }
 
-interface UserRow {
+export function publicUser(user: {
   id: number;
   name: string;
   email: string;
   role: string;
-  createdAt?: unknown;
-}
-
-export function publicUser(user: UserRow) {
+}): PublicUser {
   return {
     id: String(user.id),
     name: user.name,

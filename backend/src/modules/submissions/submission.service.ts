@@ -1,17 +1,14 @@
 import { connectDatabase, db } from "../../prisma/db.ts";
 import { errors } from "../../lib/errors.ts";
-import type { ListQuery, StatusUpdateInput, SubmitProjectInput } from "./submission.validation.ts";
-
-export interface SubmissionRow {
-  id: number;
-  name: string;
-  repoUrl: string;
-  liveUrl: string | null;
-  description: string;
-  status: string;
-  createdAt: string;
-  owner: { id: number; name: string; email: string };
-}
+import type {
+  ListQuery,
+  StatsResponse,
+  StatusUpdateInput,
+  StatusUpdateResponse,
+  SubmissionListResponse,
+  SubmissionRow,
+  SubmitProjectInput,
+} from "../../types/index.ts";
 
 export async function createSubmission(userId: number, input: SubmitProjectInput) {
   await connectDatabase();
@@ -21,10 +18,10 @@ export async function createSubmission(userId: number, input: SubmitProjectInput
     repoUrl: input.repoUrl,
   }).first();
   if (duplicate) {
-    const message = "You have already submitted a project with this repo URL";
-    const error = errors.conflict(message);
-    Object.assign(error, { fieldErrors: { repoUrl: [message] } });
-    throw error;
+    throw errors.conflict(
+      "You have already submitted a project with this repo URL",
+      { repoUrl: ["You have already submitted a project with this repo URL"] },
+    );
   }
 
   const submission = await db.orm.public.Submission.create({
@@ -50,17 +47,19 @@ export async function listMySubmissions(userId: number): Promise<SubmissionRow[]
   return rows.map(toRow);
 }
 
-export async function listSubmissions(query: ListQuery) {
+export async function listSubmissions(query: ListQuery): Promise<SubmissionListResponse> {
   await connectDatabase();
 
-  const page = await db.orm.public.Submission.where({ status: query.status ?? undefined })
+  const statusFilter = { status: query.status ?? undefined };
+
+  const page = await db.orm.public.Submission.where(statusFilter)
     .include("owner")
     .orderBy((s) => s.createdAt.desc())
     .limit(query.pageSize)
     .offset((query.page - 1) * query.pageSize)
     .all();
 
-  const counter = await db.orm.public.Submission.where({ status: query.status ?? undefined })
+  const counter = await db.orm.public.Submission.where(statusFilter)
     .aggregate((agg) => ({ total: agg.count() }));
 
   return {
@@ -76,7 +75,7 @@ export async function updateStatus(
   mentorId: number,
   submissionId: number,
   input: StatusUpdateInput,
-) {
+): Promise<StatusUpdateResponse> {
   await connectDatabase();
 
   const submission = await db.orm.public.Submission.where({ id: submissionId }).first();
@@ -105,12 +104,8 @@ export async function updateStatus(
   return { submission: updated ? toRow(updated) : null, feedback };
 }
 
-export async function submissionStats(): Promise<{
-  totals: { total: number; pending: number; approved: number; rejected: number };
-}> {
+export async function submissionStats(): Promise<StatsResponse> {
   await connectDatabase();
-
-  const total = await db.orm.public.Submission.aggregate((agg) => ({ value: agg.count() }));
 
   const grouped = await db.orm.public.Submission
     .groupBy("status")
@@ -118,12 +113,16 @@ export async function submissionStats(): Promise<{
 
   const byStatus = new Map(grouped.map((row) => [row.status, Number(row.count)]));
 
+  const pending = byStatus.get("PENDING") ?? 0;
+  const approved = byStatus.get("APPROVED") ?? 0;
+  const rejected = byStatus.get("REJECTED") ?? 0;
+
   return {
     totals: {
-      total: Number(total.value),
-      pending: byStatus.get("PENDING") ?? 0,
-      approved: byStatus.get("APPROVED") ?? 0,
-      rejected: byStatus.get("REJECTED") ?? 0,
+      total: pending + approved + rejected,
+      pending,
+      approved,
+      rejected,
     },
   };
 }

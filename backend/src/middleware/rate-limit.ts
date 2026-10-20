@@ -1,11 +1,6 @@
 import type { NextFunction, Request, RequestHandler, Response } from "express";
 
-interface BucketOptions {
-  windowMs: number;
-  max: number;
-  key?: (req: Request) => string;
-  message?: string;
-}
+import type { BucketOptions } from "../types/index.ts";
 
 export function rateLimit(options: BucketOptions): RequestHandler {
   const { windowMs, max, key = (req) => req.ip ?? "unknown", message } = options;

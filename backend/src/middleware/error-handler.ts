@@ -12,9 +12,8 @@ export const errorHandler: ErrorRequestHandler = (error: unknown, _req, res, _ne
     return;
   }
   if (isHttpError(error)) {
-    const extra = (error as { fieldErrors?: unknown }).fieldErrors;
     res.status(error.status).json(
-      extra ? { error: error.message, fieldErrors: extra } : { error: error.message },
+      error.fieldErrors ? { error: error.message, fieldErrors: error.fieldErrors } : { error: error.message },
     );
     return;
   }

@@ -38,12 +38,7 @@ export const idParamSchema = z.object({
   id: z.coerce.number().int().min(1),
 });
 
-export const statusUpdateSchema = z
-  .object({
-    status: z.enum(["APPROVED", "REJECTED"]),
-    feedback: z.string().trim().min(5).max(2000).optional(),
-  });
-
-export type SubmitProjectInput = z.infer<typeof submitProjectSchema>;
-export type ListQuery = z.infer<typeof listQuerySchema>;
-export type StatusUpdateInput = z.infer<typeof statusUpdateSchema>;
+export const statusUpdateSchema = z.object({
+  status: z.enum(["APPROVED", "REJECTED"]),
+  feedback: z.string().trim().min(5).max(2000).optional(),
+});

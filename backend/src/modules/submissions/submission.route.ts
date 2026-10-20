@@ -1,9 +1,10 @@
 import { Router } from "express";
 
 import { env } from "../../config/env.ts";
-import { authenticate, requireRole, type AuthenticatedRequest } from "../../lib/auth.ts";
+import { authenticate, requireRole } from "../../lib/auth.ts";
 import { validateBody } from "../../lib/validate.ts";
 import { rateLimit } from "../../middleware/rate-limit.ts";
+import type { AuthenticatedRequest } from "../../types/index.ts";
 import {
   createSubmissionController,
   listMySubmissionsController,
