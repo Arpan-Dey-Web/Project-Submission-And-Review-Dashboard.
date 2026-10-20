@@ -8,8 +8,6 @@ export interface AuthUser {
   role: "STUDENT" | "MENTOR";
 }
 
-// Only sign what is needed for AuthZ: subject + role. Claims travel in the
-// token, so anything in here is readable by whoever holds it — no secrets.
 export function signToken(user: AuthUser): string {
   const options: SignOptions = { expiresIn: env.jwtExpiresIn as SignOptions["expiresIn"] };
   return jwt.sign({ sub: String(user.id), role: user.role }, env.jwtSecret, options);
@@ -35,11 +33,6 @@ export interface AuthenticatedRequest extends Request {
   user: AuthUser;
 }
 
-/**
- * Middleware 1: AuthN. Verifies the caller is someone we issued a token to.
- * Middleware 2: requireRole. AuthZ. Verifies the caller may do the thing.
- * Keeping them separate is the whole RBAC pipeline story.
- */
 export function authenticate(req: Request, res: Response, next: NextFunction): void {
   const token = extractBearerToken(req.headers.authorization);
   if (!token) {

@@ -12,11 +12,6 @@ import {
 import type { ListQuery, StatusUpdateInput, SubmitProjectInput } from "./submission.validation.ts";
 import { idParamSchema, listQuerySchema } from "./submission.validation.ts";
 
-/**
- * Controllers translate HTTP <-> app language. They own `req`/`res`, read
- * validated input, call the service, and shape the JSON the client sees.
- * All business rules stay in the service — a controller must be boring.
- */
 export async function createSubmissionController(req: Request, res: Response): Promise<void> {
   const input = req.body as SubmitProjectInput;
   const submission = await createSubmission((req as AuthenticatedRequest).user.id, input);

@@ -1,4 +1,3 @@
-// use prisma-8
 
 enum Role {
   STUDENT

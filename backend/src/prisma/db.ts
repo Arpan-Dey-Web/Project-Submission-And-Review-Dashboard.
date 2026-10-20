@@ -2,12 +2,9 @@ import postgres from "@prisma/orm-postgres/runtime";
 
 import "temporal-polyfill/global";
 
-// Must run before DATABASE_URL is read below. Static imports hoist past
-// index.ts, so loading here guarantees env wins over module init order.
 try {
   process.loadEnvFile();
 } catch {
-  // no .env file present — fine for composer/managed deployments
 }
 
 import service from "../../service.ts";

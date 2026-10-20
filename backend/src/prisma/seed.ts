@@ -4,7 +4,6 @@ import { connectDatabase, db } from "./db.ts";
 
 const BCRYPT_ROUNDS = 10;
 
-/** Seeded accounts documented in backend/README.md. Idempotent via upserts. */
 export async function runSeed(): Promise<void> {
   await connectDatabase();
 
@@ -36,7 +35,6 @@ export async function runSeed(): Promise<void> {
 
   const tisha = students[0]!;
 
-  // One sample submission so the mentor dashboard is never empty on first run.
   await db.orm.public.Submission.upsert({
     create: {
       ownerId: tisha.id,

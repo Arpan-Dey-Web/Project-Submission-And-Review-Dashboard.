@@ -12,7 +12,6 @@ export async function signupStudent(input: SignupInput) {
 
   const existing = await db.orm.public.User.where({ email: input.email }).first();
   if (existing) {
-    // Same 409 for "already signed up" — mirror the DB-level unique contract.
     throw errors.conflict("This email is already taken. Try signing up with another.");
   }
 
@@ -32,8 +31,6 @@ export async function login(input: LoginInput) {
 
   const user = await db.orm.public.User.where({ email: input.email }).first();
   if (!user || !(await bcrypt.compare(input.password, user.passwordHash))) {
-    // AuthN failure: identical response for unknown email + wrong password
-    // so error responses never reveal which accounts exist.
     throw errors.unauthorized("Invalid email or password");
   }
 

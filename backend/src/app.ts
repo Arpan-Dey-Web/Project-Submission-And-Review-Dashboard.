@@ -13,7 +13,6 @@ export function application() {
   expressApp.use(cors({ origin: env.corsOrigin, credentials: false }));
   expressApp.use(express.json({ limit: "1mb" }));
 
-  // Health check for setup docs / monitoring.
   expressApp.get("/api/health", (_req, res) => {
     res.json({ ok: true });
   });

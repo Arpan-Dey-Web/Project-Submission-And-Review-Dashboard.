@@ -1,11 +1,6 @@
 import type { Request, RequestHandler, Response } from "express";
 import { type ZodTypeAny, type TypeOf } from "zod";
 
-/**
- * Middleware that parses and validates `req.body` against a Zod schema.
- * On failure it responds with the shared `{ fieldErrors }` envelope so the
- * frontend can map errors back onto the inputs that caused them.
- */
 export function validateBody<T extends ZodTypeAny>(schema: T): RequestHandler {
   return async (req: Request, res: Response, next: (error?: unknown) => void) => {
     const result = schema.safeParse(req.body);
@@ -21,7 +16,6 @@ export function validateBody<T extends ZodTypeAny>(schema: T): RequestHandler {
   };
 }
 
-/** Reusable safe parse for non-body inputs (params, query). Throws ZodError. */
 export function parseOrThrow<T extends ZodTypeAny>(schema: T, input: unknown): TypeOf<T> {
   const result = schema.safeParse(input);
   if (!result.success) {
@@ -30,7 +24,6 @@ export function parseOrThrow<T extends ZodTypeAny>(schema: T, input: unknown): T
   return result.data;
 }
 
-/** Flatten a ZodError into the `{ field } -> [messages]` envelope. */
 export function zodToFieldErrors(error: { issues: { path: PropertyKey[]; message: string }[] }): {
   [key: string]: string[];
 } {

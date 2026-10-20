@@ -14,8 +14,6 @@ const authRateLimit = () =>
     message: "Too many login/signup attempts from this IP. Try again in a few minutes.",
   });
 
-// Express 5 forwards async-controller rejections to the error handler,
-// so no `.then().catch()` wiring is needed here.
 authRouter.post("/signup", authRateLimit(), validateBody(signupSchema), signupController);
 
 authRouter.post("/login", authRateLimit(), validateBody(loginSchema), loginController);

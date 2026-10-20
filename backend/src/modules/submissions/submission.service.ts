@@ -16,9 +16,6 @@ export interface SubmissionRow {
 export async function createSubmission(userId: number, input: SubmitProjectInput) {
   await connectDatabase();
 
-  // Duplicate guard: same user + same repo URL. The composite unique index in
-  // the contract is the real enforcement; this pre-check exists to return a
-  // clean 409 with a field error instead of a raw database error.
   const duplicate = await db.orm.public.Submission.where({
     ownerId: userId,
     repoUrl: input.repoUrl,
@@ -42,7 +39,6 @@ export async function createSubmission(userId: number, input: SubmitProjectInput
   return submission;
 }
 
-/** Student's own list — only the submissions they created. */
 export async function listMySubmissions(userId: number): Promise<SubmissionRow[]> {
   await connectDatabase();
 
@@ -54,11 +50,6 @@ export async function listMySubmissions(userId: number): Promise<SubmissionRow[]
   return rows.map(toRow);
 }
 
-/**
- * Mentor listing: server-side status filter + pagination. Filtering happens
- * in the SQL `where`, never in JS — that keeps page totals correct and lets
- * the database use its indexes instead of dragging everything into memory.
- */
 export async function listSubmissions(query: ListQuery) {
   await connectDatabase();
 
@@ -93,8 +84,6 @@ export async function updateStatus(
     throw errors.notFound("Submission not found");
   }
 
-  // State transition rule: a mentor's decision is final. PENDING -> APPROVED
-  // or PENDING -> REJECTED only; no flipping an already-reviewed submission.
   if (submission.status !== "PENDING") {
     throw errors.unprocessable(`This submission was already ${submission.status.toLowerCase()}`);
   }
@@ -116,11 +105,6 @@ export async function updateStatus(
   return { submission: updated ? toRow(updated) : null, feedback };
 }
 
-/**
- * Aggregated statistics for the dashboard header. One grouped query instead
- * of four: SELECT status, COUNT(*) ... GROUP BY status. This is the hot read
- * that would sit behind a cache in a real high-traffic setup.
- */
 export async function submissionStats(): Promise<{
   totals: { total: number; pending: number; approved: number; rejected: number };
 }> {

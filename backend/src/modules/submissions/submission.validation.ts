@@ -1,6 +1,5 @@
 import { z } from "zod";
 
-/** Shared shape for a project submission (mirrored by the frontend form). */
 export const submitProjectSchema = z.object({
   name: z
     .string()

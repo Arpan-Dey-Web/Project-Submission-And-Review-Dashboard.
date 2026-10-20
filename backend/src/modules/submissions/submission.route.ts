@@ -18,10 +18,6 @@ export const statsRouter = Router();
 
 const limit = env.submissionRateLimit;
 
-/**
- * Students create submissions. The owner id comes from the verified JWT,
- * never from the request body — clients cannot submit on behalf of others.
- */
 submissionsRouter.post(
   "/",
   authenticate,
@@ -36,17 +32,10 @@ submissionsRouter.post(
   createSubmissionController,
 );
 
-/** Student: all of my own submissions. */
 submissionsRouter.get("/mine", authenticate, listMySubmissionsController);
 
-/** Mentor table: pagination + server-side status filter. */
 submissionsRouter.get("/", authenticate, requireRole("MENTOR"), listSubmissionsController);
 
-/**
- * Mentor verdict. Order matters and is teachable:
- * authenticate (who are you) -> requireRole (what may you do) ->
- * validate body -> controller parses params + writes.
- */
 submissionsRouter.patch(
   "/:id/status",
   authenticate,
@@ -55,5 +44,4 @@ submissionsRouter.patch(
   updateStatusController,
 );
 
-/** Aggregated stats (also used by the student sidebar). */
 statsRouter.get("/", authenticate, submissionStatsController);

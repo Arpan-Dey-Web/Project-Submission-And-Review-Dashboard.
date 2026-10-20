@@ -1,4 +1,3 @@
-// Central env access. Fail fast on missing required values.
 function required(name: string, fallback?: string): string {
   const value = process.env[name] ?? fallback;
   if (!value) {
