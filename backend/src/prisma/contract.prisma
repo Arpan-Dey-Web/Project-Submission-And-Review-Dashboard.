@@ -1,0 +1,51 @@
+// use prisma-8
+
+enum Role {
+  STUDENT
+  MENTOR
+}
+
+enum Status {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model User {
+  id           Int      @id @default(autoincrement())
+  email        String   @unique
+  name         String
+  passwordHash String
+  role         Role     @default(STUDENT)
+  submissions  Submission[]
+  reviews      Feedback[] @relation("mentorReviews")
+  createdAt    TimestamptzString @default(now())
+  updatedAt    temporal.updatedAtString()
+}
+
+model Submission {
+  id          Int     @id @default(autoincrement())
+  name        String
+  repoUrl     String
+  liveUrl     String?
+  description String
+  status      Status  @default(PENDING)
+  owner       User    @relation("owner", fields: [ownerId], references: [id])
+  ownerId     Int
+  feedback    Feedback[]
+  createdAt   TimestamptzString @default(now())
+  updatedAt   temporal.updatedAtString()
+
+  @@unique([ownerId, repoUrl])
+}
+
+model Feedback {
+  id           Int        @id @default(autoincrement())
+  submission   Submission @relation(fields: [submissionId], references: [id])
+  submissionId Int        @unique
+  mentor       User       @relation("mentorReviews", fields: [mentorId], references: [id])
+  mentorId     Int
+  content      String
+  createdAt    TimestamptzString @default(now())
+  updatedAt    temporal.updatedAtString()
+}
