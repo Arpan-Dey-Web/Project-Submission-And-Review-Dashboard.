@@ -2,10 +2,9 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { Eye, EyeOff } from "lucide-react";
 import { useState } from "react";
-import { GitPullRequestArrow } from "lucide-react";
 
-import { AppHeader } from "@/components/app-header";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import {
@@ -53,6 +52,7 @@ export function AuthForm({ mode }: AuthFormProps) {
   const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({});
   const [formError, setFormError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const visibleFields = isSignup ? signupFields : fields;
 
@@ -104,39 +104,8 @@ export function AuthForm({ mode }: AuthFormProps) {
   };
 
   return (
-    <div className="min-h-svh">
-      <AppHeader heading="Project Submission & Review" />
-      <main className="mx-auto flex w-full max-w-5xl justify-center px-4 py-10">
-        <div className="grid w-full max-w-3xl items-start gap-8 md:grid-cols-[1fr_1.1fr]">
-          <aside className="relative hidden flex-col gap-6 overflow-hidden rounded-3xl bg-gradient-to-br from-primary via-primary/90 to-primary/70 p-8 text-primary-foreground md:flex">
-            <div
-              aria-hidden
-              className="pointer-events-none absolute -top-20 -right-20 size-64 rounded-full bg-white/10 blur-2xl"
-            />
-            <div className="flex size-11 items-center justify-center rounded-2xl bg-white/15 ring-3 ring-white/20">
-              <GitPullRequestArrow className="size-6" />
-            </div>
-            <div className="grid gap-2">
-              <h2 className="text-xl font-semibold">
-                {isSignup ? "Join the cohort" : "Welcome back"}
-              </h2>
-              <p className="text-sm text-primary-foreground/80">
-                {isSignup
-                  ? "Create a student account and hand your first project to a mentor today."
-                  : "Log in to submit projects or pick up where you left reviewing."}
-              </p>
-            </div>
-            <div className="mt-auto grid gap-3 text-xs text-primary-foreground/80">
-              <div className="rounded-xl bg-white/10 px-3 py-2">
-                Demo mentor: <code>mentor@demo.io</code>
-              </div>
-              <div className="rounded-xl bg-white/10 px-3 py-2">
-                Demo student: <code>tisha@demo.io</code>
-                <span className="text-primary-foreground/70"> · password123</span>
-              </div>
-            </div>
-          </aside>
-
+    <main className="flex min-h-svh items-center justify-center px-4 py-10">
+      <div className="w-full max-w-md">
           <Card>
             <CardHeader>
               <CardTitle>
@@ -157,18 +126,32 @@ export function AuthForm({ mode }: AuthFormProps) {
               <form onSubmit={handleSubmit} className="grid gap-4" noValidate>
                 {visibleFields.map((field) => {
                   const errors = fieldErrors[field.name] ?? [];
+                  const isPasswordField = field.name === "password";
                   return (
                     <div key={field.name} className="grid gap-1.5">
                       <Label htmlFor={field.name}>{field.label}</Label>
-                      <Input
-                        id={field.name}
-                        name={field.name}
-                        type={field.type}
-                        autoComplete={field.autoComplete}
-                        value={values[field.name] ?? ""}
-                        onChange={(event) => setValue(field.name, event.target.value)}
-                        aria-invalid={errors.length > 0 ? true : undefined}
-                      />
+                      <div className="relative">
+                        <Input
+                          id={field.name}
+                          name={field.name}
+                          type={isPasswordField && showPassword ? "text" : field.type}
+                          autoComplete={field.autoComplete}
+                          value={values[field.name] ?? ""}
+                          onChange={(event) => setValue(field.name, event.target.value)}
+                          aria-invalid={errors.length > 0 ? true : undefined}
+                          className={isPasswordField ? "pr-10" : undefined}
+                        />
+                        {isPasswordField && (
+                          <button
+                            type="button"
+                            onClick={() => setShowPassword((prev) => !prev)}
+                            aria-label={showPassword ? "Hide password" : "Show password"}
+                            className="absolute inset-y-0 right-0 flex items-center px-3 text-muted-foreground hover:text-foreground"
+                          >
+                            {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                          </button>
+                        )}
+                      </div>
                       {errors.map((message) => (
                         <p key={message} className="text-xs text-destructive">
                           {message}
@@ -180,6 +163,37 @@ export function AuthForm({ mode }: AuthFormProps) {
                 <Button type="submit" size="lg" disabled={submitting}>
                   {submitting ? "Please wait…" : isSignup ? "Create account" : "Log in"}
                 </Button>
+                {!isSignup && (
+                  <div className="grid gap-2 pt-1">
+                    <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
+                      <span className="h-px flex-1 bg-border" />
+                      Quick fill demo accounts
+                      <span className="h-px flex-1 bg-border" />
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => {
+                          setValue("email", "tisha@demo.io");
+                          setValue("password", "password123");
+                        }}
+                      >
+                        Demo student
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => {
+                          setValue("email", "mentor@demo.io");
+                          setValue("password", "password123");
+                        }}
+                      >
+                        Demo mentor
+                      </Button>
+                    </div>
+                  </div>
+                )}
               </form>
             </CardContent>
             <CardFooter className="text-sm text-muted-foreground">
@@ -201,7 +215,6 @@ export function AuthForm({ mode }: AuthFormProps) {
             </CardFooter>
           </Card>
         </div>
-      </main>
-    </div>
+    </main>
   );
 }

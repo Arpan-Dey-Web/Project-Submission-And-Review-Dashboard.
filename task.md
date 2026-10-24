@@ -109,3 +109,22 @@ You will submit through a **Google Form** (we will share it) with:
 > Missing any one will result in point deduction.
 
 Thank you and best of luck 🎯
+
+
+
+
+
+<!-- Video i will create -->
+
+<!-- 
+Topic 1C = Authentication vs. Authorization (RBAC): Demystify the conceptual difference
+between verifying identity (AuthN) and Role-Based Access Control (AuthZ). Explain how a
+server securely differentiates between a Student and a Mentor without compromising
+performance.
+-->
+
+<!-- 
+Topic 2D = Defensive Form Validation: Live code a robust form submission flow. Show how to
+implement strict validation (e.g., using Zod) to prevent malformed data or duplicate submissions,
+and demonstrate how to surface those validation errors gracefully to the user in the frontend.
+-->
