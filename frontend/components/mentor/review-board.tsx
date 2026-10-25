@@ -8,14 +8,17 @@ import {
   Clock,
   ExternalLink,
   GitBranch,
+  Search,
   X,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import useSWR from "swr";
 
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   Card,
   CardContent,
@@ -215,16 +218,22 @@ function ReviewCell({ token, row, onDone }: ReviewCellProps) {
   );
 }
 
-const fetchList = ([path, token, page, status]: [
-  string,
-  string,
-  number,
-  StatusFilter,
-]): Promise<SubmissionListResponse> => {
-  const params = new URLSearchParams({ page: String(page), pageSize: String(PAGE_SIZE) });
-  if (status !== "ALL") params.set("status", status);
-  return apiFetch<SubmissionListResponse>(`${path}?${params.toString()}`, { token });
-};
+const fetchList = ([path, token]: [string, string]): Promise<SubmissionListResponse> =>
+  apiFetch<SubmissionListResponse>(path, { token });
+
+/**
+ * Builds the query string for the submissions list from URL state so the
+ * dashboard is refresh-safe and shareable (/review?status=PENDING&page=2).
+ */
+function buildListPath(page: number, statusFilter: StatusFilter, search: string): string {
+  const params = new URLSearchParams({
+    page: String(page),
+    pageSize: String(PAGE_SIZE),
+  });
+  if (statusFilter !== "ALL") params.set("status", statusFilter);
+  if (search) params.set("search", search);
+  return `/submissions?${params.toString()}`;
+}
 
 const fetchStats = ([path, token]: [string, string]): Promise<StatsResponse> =>
   apiFetch<StatsResponse>(path, { token });
@@ -234,8 +243,50 @@ interface ReviewBoardProps {
 }
 
 export function ReviewBoard({ token }: ReviewBoardProps) {
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>("ALL");
-  const [page, setPage] = useState(1);
+  // URL-synced state: filters, pagination and the search term live in the
+  // query string instead of plain useState, so a refresh or shared link
+  // (e.g. /review?status=APPROVED&page=2&search=react) restores the view.
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+
+  const rawStatus = searchParams.get("status");
+  const statusFilter = statusFilters.find((value) => value === rawStatus) ?? "ALL";
+  const page = Math.max(1, Number(searchParams.get("page")) || 1);
+  const search = searchParams.get("search") ?? "";
+  const [searchDraft, setSearchDraft] = useState(search);
+
+  const updateUrl = (changes: Record<string, string | null>) => {
+    const params = new URLSearchParams(searchParams.toString());
+    for (const [key, value] of Object.entries(changes)) {
+      if (value === null || value === "") {
+        params.delete(key);
+      } else {
+        params.set(key, value);
+      }
+    }
+    router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+  };
+
+  // Keep the draft input in sync when the URL changes from outside
+  // (browser back/forward, or a shared link pasted in the same tab).
+  useEffect(() => {
+    setSearchDraft(search);
+  }, [search]);
+
+  const changeFilter = (value: string) => {
+    updateUrl({ status: value === "ALL" ? null : value, page: null });
+  };
+
+  const changePage = (next: number) => {
+    updateUrl({ page: String(next) });
+  };
+
+  const submitSearch = (event: React.FormEvent) => {
+    event.preventDefault();
+    // A new result set starts from page 1, so drop the page param.
+    updateUrl({ search: searchDraft, page: null });
+  };
 
   const {
     data,
@@ -243,7 +294,7 @@ export function ReviewBoard({ token }: ReviewBoardProps) {
     isLoading,
     mutate: mutateList,
   } = useSWR<SubmissionListResponse, ApiError>(
-    ["submissions", token, page, statusFilter],
+    ["submissions", token, buildListPath(page, statusFilter, search)],
     fetchList,
   );
   const {
@@ -259,11 +310,6 @@ export function ReviewBoard({ token }: ReviewBoardProps) {
 
   const total = data?.total ?? 0;
   const totalPages = Math.max(data?.totalPages ?? 1, 1);
-
-  const changeFilter = (value: string) => {
-    setStatusFilter(value as StatusFilter);
-    setPage(1);
-  };
 
   return (
     <>
@@ -321,6 +367,21 @@ export function ReviewBoard({ token }: ReviewBoardProps) {
               ))}
             </TabsList>
           </Tabs>
+          <form onSubmit={submitSearch} className="flex max-w-sm gap-2">
+            <div className="relative grow">
+              <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                value={searchDraft}
+                onChange={(event) => setSearchDraft(event.target.value)}
+                placeholder="Search project or student…"
+                className="pl-9"
+                aria-label="Search submissions"
+              />
+            </div>
+            <Button type="submit" variant="outline" size="sm" disabled={!searchDraft.trim()}>
+              Search
+            </Button>
+          </form>
           <CardDescription>
             {isLoading
               ? "Loading submissions…"
@@ -419,7 +480,7 @@ export function ReviewBoard({ token }: ReviewBoardProps) {
               variant="outline"
               size="sm"
               disabled={page <= 1 || isLoading}
-              onClick={() => setPage((current) => Math.max(1, current - 1))}
+              onClick={() => changePage(page - 1)}
             >
               <ChevronLeft data-icon="inline-start" /> Previous
             </Button>
@@ -430,7 +491,7 @@ export function ReviewBoard({ token }: ReviewBoardProps) {
               variant="outline"
               size="sm"
               disabled={page >= totalPages || isLoading}
-              onClick={() => setPage((current) => current + 1)}
+              onClick={() => changePage(page + 1)}
             >
               Next <ChevronRight data-icon="inline-end" />
             </Button>

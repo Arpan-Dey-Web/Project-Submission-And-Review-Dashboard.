@@ -1,5 +1,7 @@
 "use client";
 
+import { Suspense } from "react";
+
 import { AppHeader } from "@/components/app-header";
 import { RoleGuard } from "@/components/role-guard";
 import { ReviewBoard } from "@/components/mentor/review-board";
@@ -14,7 +16,11 @@ function ReviewDashboard() {
     <div className="min-h-svh">
       <AppHeader heading="Review dashboard" />
       <main className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 py-8">
-        <ReviewBoard token={session.token} />
+        {/* Suspense boundary: ReviewBoard reads URL state via useSearchParams,
+            which needs a boundary during prerendering. */}
+        <Suspense fallback={null}>
+          <ReviewBoard token={session.token} />
+        </Suspense>
       </main>
     </div>
   );

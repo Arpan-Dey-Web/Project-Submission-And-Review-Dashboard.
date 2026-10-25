@@ -32,6 +32,13 @@ export const listQuerySchema = z.object({
   status: z.enum(statusValues).optional(),
   page: z.coerce.number().int().min(1).default(1),
   pageSize: z.coerce.number().int().min(1).max(50).default(10),
+  search: z
+    .string()
+    .trim()
+    .min(1, "Search must be at least 1 character")
+    .max(100, "Search is too long")
+    .optional()
+    .or(z.literal("").transform(() => undefined)),
 });
 
 export const idParamSchema = z.object({

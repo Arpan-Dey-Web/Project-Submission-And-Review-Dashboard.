@@ -19,4 +19,6 @@ export const env = {
     windowMs: 15 * 60 * 1000,
     max: 10,
   },
+  // Optional: raises GitHub API rate limits for repo pre-flight checks.
+  githubToken: process.env.GITHUB_TOKEN || undefined,
 } as const;

@@ -1,5 +1,7 @@
 import { connectDatabase, db } from "../../prisma/db.ts";
+import { or } from "@prisma/orm-postgres/orm-client";
 import { errors } from "../../lib/errors.ts";
+import { verifyRepoUrl } from "../../lib/github.ts";
 import type {
   ListQuery,
   StatsResponse,
@@ -23,6 +25,9 @@ export async function createSubmission(userId: number, input: SubmitProjectInput
       { repoUrl: ["You have already submitted a project with this repo URL"] },
     );
   }
+
+  // Pre-flight: never insert a dead / private / README-less repo link.
+  await verifyRepoUrl(input.repoUrl);
 
   const submission = await db.orm.public.Submission.create({
     ownerId: userId,
@@ -51,16 +56,42 @@ export async function listSubmissions(query: ListQuery): Promise<SubmissionListR
   await connectDatabase();
 
   const statusFilter = { status: query.status ?? undefined };
+  const search = query.search ?? "";
 
-  const page = await db.orm.public.Submission.where(statusFilter)
+  // Server-side search: match project name / repo URL directly, and student
+  // name / email via the owner's ids (resolved up front so OR-combining the
+  // groups stays over this table's own columns).
+  const base = db.orm.public.Submission.where(statusFilter);
+  const ownerIds = search
+    ? (
+        await db.orm.public.User.where((user) =>
+          or(user.name.ilike(`%${search}%`), user.email.ilike(`%${search}%`)),
+        )
+          .select("id")
+          .all()
+      ).map((user) => user.id)
+    : [];
+
+  const filtered = search
+    ? base.where((submission) =>
+        or(
+          submission.name.ilike(`%${search}%`),
+          submission.repoUrl.ilike(`%${search}%`),
+          ...(ownerIds.length > 0
+            ? [submission.ownerId.in(ownerIds)]
+            : [submission.id.isNull()]),
+        ),
+      )
+    : base;
+
+  const page = await filtered
     .include("owner")
     .orderBy((s) => s.createdAt.desc())
     .limit(query.pageSize)
     .offset((query.page - 1) * query.pageSize)
     .all();
 
-  const counter = await db.orm.public.Submission.where(statusFilter)
-    .aggregate((agg) => ({ total: agg.count() }));
+  const counter = await filtered.aggregate((agg) => ({ total: agg.count() }));
 
   return {
     items: page.map(toRow),
